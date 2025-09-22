@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>테크베이 디테일링 팀 재고 관리</title>
+<style>
+  body {
+    margin: 0; font-family: Arial, sans-serif; background-color: #f0f0f0;
+  }
+  #header {
+    background-color: #001f4d;
+    color: white;
+    padding: 20px;
+    font-size: 1.8em;
+    text-align: center;
+    font-weight: bold;
+    position: relative;
+  }
+  #searchSection {
+    margin: 20px auto;
+    text-align: center;
+  }
+  #searchInput {
+    padding: 8px;
+    width: 300px;
+    font-size: 1em;
+  }
+  #searchBtn {
+    padding: 8px 15px;
+    font-size: 1em;
+    margin-left: 10px;
+    cursor: pointer;
+  }
+  #userBtn {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    background-color: #001f4d;
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+    z-index: 1200;
+  }
+  /* 재고 리스트 컨테이너 */
+  #inventoryList {
+    width: 90%;
+    margin: 0 auto 100px auto;
+  }
+  .inventoryItem {
+    display: grid;
+    grid-template-columns: 80px 1fr 1fr 80px;
+    align-items: center;
+    background: white;
+    margin-bottom: 10px;
+    padding: 10px 15px;
+    border-radius: 10px;
+    box-shadow: 0 0 8px rgba(0,0,0,0.1);
+  }
+  .inventoryItem img {
+    width: 70px;
+    height: 90px;
+    object-fit: cover;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+  }
+  .inventoryItem div, .inventoryItem button {
+    text-align: center;
+    font-weight: 600;
+    font-size: 1em;
+  }
+  .inventoryItem button {
+    background-color: #001f4d;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    padding: 6px 12px;
+    transition: background-color 0.3s ease;
+  }
+  .inventoryItem button:hover {
+    background-color: #004080;
+  }
+
+  /* 비밀번호 입력 모달 */
+  #passwordModal {
+    display: none; 
+    position: fixed; 
+    top: 50%; left: 50%; 
+    transform: translate(-50%, -50%);
+    background-color: white;
+    padding: 25px 30px;
+    border-radius: 12px;
+    box-shadow: 0 0 15px rgba(0,0,0,0.3);
+    z-index: 1300;
+    min-width: 300px;
+    text-align: center;
+  }
+  #passwordModal input {
+    font-size: 1.2em;
+    padding: 8px;
+    width: 80%;
+    margin-bottom: 15px;
+  }
+  #passwordModal button {
+    padding: 8px 15px;
+    font-size: 1.1em;
+    cursor: pointer;
+    margin: 0 10px;
+  }
+  /* 관리자 모달 */
+  #adminModal {
+    display: none;
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    padding: 30px 35px;
+    border-radius: 12px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.4);
+    z-index: 1400;
+    max-width: 700px;
+    max-height: 90vh;
+    overflow-y: auto;
+    text-align: center;
+  }
+  /* 관리자 모달 제목 및 뒤로가기 버튼 */
+  #adminModal h2 {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 0;
+  }
+  #backToMainBtn {
+    background: transparent;
+    border: none;
+    color: #001f4d;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    transition: background 0.2s ease;
+  }
+  #backToMainBtn:hover {
+    background: #e0e0e0;
+  }
+  #adminModal .section {
+    margin: 20px 0;
+    border-top: 1px solid #ccc;
+    padding-top: 20px;
+  }
+  #adminModal label {
+    font-weight: 600;
+  }
+  /* 제품 추가 섹션 - 한 줄 정렬 */
+  #addProductSection {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  #addProductSection input[type="file"] {
+    width: 120px;
+  }
+  #addProductSection input[type="text"] {
+    width: 150px;
+    padding: 6px;
+    font-size: 1em;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+  }
+  #addProductSection input[type="number"] {
+    width: 80px;
+    padding: 6px;
+    font-size: 1em;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+  }
+  #addProductSection button {
+    padding: 7px 15px;
+    background-color: #001f4d;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  #addProductSection button:hover {
+    background-color: #004080;
+  }
+  /* 기존 제품 리스트 */
+  #existingProductSection h3 {
+    margin-bottom: 15px;
+  }
+  #existingProductList {
+    margin-top: 10px;
+  }
+  .existingProductItem {
+    display: grid;
+    grid-template-columns: 1fr 80px 80px;
+    gap: 15px;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  /* 하단 입고 출고 버튼 */
+  #actionButtons {
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    gap: 15px;
+    display: flex;
+    background: #001f4d;
+    padding: 10px 20px;
+    border-radius: 10px 10px 0 0;
+    z-index: 1100;
+  }
+  #actionButtons button {
+    background-color: white;
+    color: #001f4d;
+    font-weight: 700;
+    font-size: 1.1em;
+    padding: 10px 22px;
+    border-radius: 6px;
+    cursor: pointer;
+    border: none;
+  }
+  #actionButtons button:hover {
+    background-color: #004080;
+    color: white;
+  }
+
+  /* 입고 및 출고 내역 모달 */
+  #inboundListModal, #outboundListModal {
+    display: none;
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    padding: 25px 30px;
+    border-radius: 12px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.4);
+    z-index: 1500;
+    max-width: 600px;
+    max-height: 80vh;
+    overflow-y: auto;
+    text-align: center;
+  }
+  #inboundListModal h3, #outboundListModal h3 {
+    margin-top: 0;
+  }
+  #inboundListModal button, #outboundListModal button {
+    margin-top: 20px;
+    padding: 8px 15px;
+    font-size: 1em;
+    cursor: pointer;
+    border-radius: 6px;
+    border: none;
+    background: #001f4d;
+    color: white;
+  }
+  .modalProductItem {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin: 12px 0;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 10px;
+  }
+  .modalProductItem img {
+    width: 60px;
+    height: 75px;
+    object-fit: cover;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+  }
+  .modalProductItem .productInfo {
+    flex-grow: 1;
+    text-align: left;
+    font-weight: 600;
+    font-size: 1.1em;
+  }
+  .modalProductItem .productQty {
+    font-weight: 700;
+    font-size: 1.1em;
+    color: #001f4d;
+  }
+</style>
+</head>
+<body>
+
+<div id="header">테크베이 디테일링 팀 재고 관리</div>
+
+<div id="searchSection">
+  <input type="text" id="searchInput" placeholder="제품명 검색" />
+  <button id="searchBtn">검색</button>
+</div>
+
+<div id="inventoryList"></div>
+
+<!-- 하단 버튼 (메인 화면 입고 확인 / 출고 확인) -->
+<div id="actionButtons">
+  <button id="mainInboundBtn">입고 확인</button>
+  <button id="mainOutboundBtn">출고 확인</button>
+</div>
+
+<!-- 비밀번호 입력 모달 -->
+<div id="passwordModal">
+  <h3>관리자 비밀번호 입력</h3>
+  <input type="password" id="adminPasswordInput" placeholder="비밀번호 입력" />
+  <br />
+  <button id="passwordConfirmBtn">확인</button>
+  <button id="passwordCancelBtn">취소</button>
+</div>
+
+<!-- 관리자 모달 -->
+<div id="adminModal">
+  <h2>
+    관리자 화면
+    <button id="backToMainBtn" title="뒤로가기">← 뒤로가기</button>
+  </h2>
+
+  <div id="addProductSection" class="section">
+    <h3>제품 추가</h3>
+    <input type="file" id="productImageInput" accept="image/*" />
+    <input type="text" id="productNameInput" placeholder="제품명" />
+    <input type="number" id="productQuantityInput" placeholder="입고 수량" min="1" />
+    <button id="addProductBtn">추가</button>
+  </div>
+
+  <div id="existingProductSection" class="section">
+    <h3>기존 재고 추가</h3>
+    <div id="existingProductList"></div>
+  </div>
+
+  <button id="adminCloseBtn" style="margin-top: 15px; padding: 8px 15px; border:none; border-radius:6px; background:#001f4d; color:white; cursor:pointer;">닫기</button>
+</div>
+
+<!-- 입고 내역 모달 -->
+<div id="inboundListModal">
+  <h3>전체 입고 제품 내역</h3>
+  <div id="inboundListContainer"></div>
+  <button id="closeInboundListBtn">닫기</button>
+</div>
+
+<!-- 출고 내역 모달 -->
+<div id="outboundListModal">
+  <h3>전체 출고 제품 내역</h3>
+  <div id="outboundListContainer"></div>
+  <button id="closeOutboundListBtn">닫기</button>
+</div>
+
+<script>
+  // 초기 재고 목록: 빈 배열 (타월 1, 클레이 1 삭제)
+  let inventory = [];
+
+  // 입고 기록 배열 (제품명 기준 누적 입고 수량)
+  let inboundRecords = {};
+
+  // 출고 기록 배열 (제품명 기준 누적 출고 수량)
+  let outboundRecords = {};
+
+  // --- DOM Elements ---
+  const inventoryList = document.getElementById('inventoryList');
+  const searchInput = document.getElementById('searchInput');
+  const searchBtn = document.getElementById('searchBtn');
+
+  const passwordModal = document.getElementById('passwordModal');
+  const adminPasswordInput = document.getElementById('adminPasswordInput');
+  const passwordConfirmBtn = document.getElementById('passwordConfirmBtn');
+  const passwordCancelBtn = document.getElementById('passwordCancelBtn');
+
+  const adminModal = document.getElementById('adminModal');
+  const backToMainBtn = document.getElementById('backToMainBtn');
+  const adminCloseBtn = document.getElementById('adminCloseBtn');
+
+  const productImageInput = document.getElementById('productImageInput');
+  const productNameInput = document.getElementById('productNameInput');
+  const productQuantityInput = document.getElementById('productQuantityInput');
+  const addProductBtn = document.getElementById('addProductBtn');
+
+  const existingProductList = document.getElementById('existingProductList');
+
+  const mainInboundBtn = document.getElementById('mainInboundBtn');
+  const mainOutboundBtn = document.getElementById('mainOutboundBtn');
+
+  const inboundListModal = document.getElementById('inboundListModal');
+  const inboundListContainer = document.getElementById('inboundListContainer');
+  const closeInboundListBtn = document.getElementById('closeInboundListBtn');
+
+  const outboundListModal = document.getElementById('outboundListModal');
+  const outboundListContainer = document.getElementById('outboundListContainer');
+  const closeOutboundListBtn = document.getElementById('closeOutboundListBtn');
+
+  // --- 함수 ---
+  function renderInventory(filter = '') {
+    inventoryList.innerHTML = '';
+
+    // 필터링
+    const filteredItems = inventory.filter(item => item.name.includes(filter));
+
+    if (filteredItems.length === 0) {
+      inventoryList.innerHTML = '<p style="text-align:center; color:#666;">검색된 제품이 없습니다.</p>';
+      return;
+    }
+
+    filteredItems.forEach((item, index) => {
+      const div = document.createElement('div');
+      div.classList.add('inventoryItem');
+
+      const img = document.createElement('img');
+      img.src = item.image;
+      img.alt = item.name;
+
+      const nameDiv = document.createElement('div');
+      nameDiv.textContent = item.name;
+
+      const quantityDiv = document.createElement('div');
+      quantityDiv.textContent = `재고: ${item.quantity}`;
+
+      const outBtn = document.createElement('button');
+      outBtn.textContent = '출고';
+      outBtn.addEventListener('click', () => {
+        if (item.quantity <= 0) {
+          alert('재고가 부족합니다.');
+          return;
+        }
+        item.quantity--;
+        // 출고 기록 추가
+        if (outboundRecords[item.name]) {
+          outboundRecords[item.name].quantity++;
+        } else {
+          outboundRecords[item.name] = {
+            name: item.name,
+            image: item.image,
+            quantity: 1
+          };
+        }
+        renderInventory(searchInput.value);
+        renderExistingProducts();
+      });
+
+      div.appendChild(img);
+      div.appendChild(nameDiv);
+      div.appendChild(quantityDiv);
+      div.appendChild(outBtn);
+
+      inventoryList.appendChild(div);
+    });
+  }
+
+  // 기존 재고 추가 목록 렌더링
+  function renderExistingProducts() {
+    existingProductList.innerHTML = '';
+    if (inventory.length === 0) {
+      existingProductList.innerHTML = '<p style="color:#555;">등록된 제품이 없습니다.</p>';
+      return;
+    }
+    inventory.forEach((item, idx) => {
+      const div = document.createElement('div');
+      div.classList.add('existingProductItem');
+
+      const nameDiv = document.createElement('div');
+      nameDiv.textContent = item.name;
+
+      const quantityDiv = document.createElement('div');
+      quantityDiv.textContent = `재고: ${item.quantity}`;
+
+      const inboundBtn = document.createElement('button');
+      inboundBtn.textContent = '입고';
+      inboundBtn.addEventListener('click', () => {
+        let addQty = prompt(`${item.name} 입고 수량을 입력하세요:`, '1');
+        addQty = parseInt(addQty);
+        if (!isNaN(addQty) && addQty > 0) {
+          item.quantity += addQty;
+          // 입고 기록 추가
+          if (inboundRecords[item.name]) {
+            inboundRecords[item.name].quantity += addQty;
+          } else {
+            inboundRecords[item.name] = {
+              name: item.name,
+              image: item.image,
+              quantity: addQty
+            };
+          }
+          renderInventory(searchInput.value);
+          renderExistingProducts();
+        } else {
+          alert('올바른 숫자를 입력해주세요.');
+        }
+      });
+
+      div.appendChild(nameDiv);
+      div.appendChild(quantityDiv);
+      div.appendChild(inboundBtn);
+
+      existingProductList.appendChild(div);
+    });
+  }
+
+  // 제품 추가 함수
+  addProductBtn.addEventListener('click', () => {
+    const file = productImageInput.files[0];
+    const name = productNameInput.value.trim();
+    const qty = parseInt(productQuantityInput.value);
+
+    if (!file) {
+      alert('제품 이미지를 선택해주세요.');
+      return;
+    }
+    if (!name) {
+      alert('제품명을 입력해주세요.');
+      return;
+    }
+    if (!qty || qty <= 0) {
+      alert('입고 수량은 1 이상의 숫자여야 합니다.');
+      return;
+    }
+
+    // 이미지 파일을 base64로 변환
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      // 중복 제품명 체크
+      const existIdx = inventory.findIndex(item => item.name === name);
+      if (existIdx !== -1) {
+        alert('이미 등록된 제품명입니다.');
+        return;
+      }
+
+      const newProduct = {
+        name,
+        image: e.target.result,
+        quantity: qty
+      };
+
+      inventory.push(newProduct);
+
+      // 입고 기록에 추가
+      if (inboundRecords[name]) {
+        inboundRecords[name].quantity += qty;
+      } else {
+        inboundRecords[name] = {
+          name,
+          image: e.target.result,
+          quantity: qty
+        };
+      }
+
+      renderInventory(searchInput.value);
+      renderExistingProducts();
+
+      // 초기화
+      productImageInput.value = '';
+      productNameInput.value = '';
+      productQuantityInput.value = '';
+    };
+    reader.readAsDataURL(file);
+  });
+
+  // 검색 버튼 클릭
+  searchBtn.addEventListener('click', () => {
+    renderInventory(searchInput.value.trim());
+  });
+
+  // 비밀번호 모달 제어
+  function showPasswordModal() {
+    passwordModal.style.display = 'block';
+    adminPasswordInput.value = '';
+    adminPasswordInput.focus();
+  }
+  function hidePasswordModal() {
+    passwordModal.style.display = 'none';
+  }
+
+  // 관리자 모달 제어
+  function showAdminModal() {
+    adminModal.style.display = 'block';
+    renderExistingProducts();
+  }
+  function hideAdminModal() {
+    adminModal.style.display = 'none';
+  }
+
+  // 메인 하단 버튼 텍스트 변경
+  mainInboundBtn.textContent = "입고 확인";
+  mainOutboundBtn.textContent = "출고 확인";
+
+  // 관리자 버튼은 우측 상단 (사용자 버튼을 대신해서 비밀번호 모달 띄우기)
+  // 로그인 기능 대신 구현했다고 가정
+  // 임시로 userBtn 만들기
+  const userBtn = document.createElement('button');
+  userBtn.id = 'userBtn';
+  userBtn.textContent = '⚙️';
+  document.body.appendChild(userBtn);
+
+  userBtn.addEventListener('click', () => {
+    showPasswordModal();
+  });
+
+  passwordCancelBtn.addEventListener('click', () => {
+    hidePasswordModal();
+  });
+
+  passwordConfirmBtn.addEventListener('click', () => {
+    const pw = adminPasswordInput.value;
+    if (pw === 'admin1234') { // 관리자 비밀번호 - 필요에 따라 수정하세요
+      hidePasswordModal();
+      showAdminModal();
+    } else {
+      alert('비밀번호가 올바르지 않습니다.');
+      adminPasswordInput.focus();
+    }
+  });
+
+  adminCloseBtn.addEventListener('click', () => {
+    hideAdminModal();
+  });
+
+  backToMainBtn.addEventListener('click', () => {
+    hideAdminModal();
+  });
+
+  // 메인 화면 입고 확인 버튼 (전체 입고 제품 사진, 이름, 누적 입고 수량 보여주기)
+  mainInboundBtn.addEventListener('click', () => {
+    inboundListContainer.innerHTML = '';
+    const keys = Object.keys(inboundRecords);
+    if (keys.length === 0) {
+      inboundListContainer.innerHTML = '<p>입고된 제품이 없습니다.</p>';
+    } else {
+      keys.forEach(key => {
+        const product = inboundRecords[key];
+        const div = document.createElement('div');
+        div.classList.add('modalProductItem');
+
+        const img = document.createElement('img');
+        img.src = product.image;
+        img.alt = product.name;
+
+        const infoDiv = document.createElement('div');
+        infoDiv.classList.add('productInfo');
+        infoDiv.textContent = product.name;
+
+        const qtyDiv = document.createElement('div');
+        qtyDiv.classList.add('productQty');
+        qtyDiv.textContent = `입고 수량: ${product.quantity}`;
+
+        div.appendChild(img);
+        div.appendChild(infoDiv);
+        div.appendChild(qtyDiv);
+
+        inboundListContainer.appendChild(div);
+      });
+    }
+    inboundListModal.style.display = 'block';
+  });
+
+  closeInboundListBtn.addEventListener('click', () => {
+    inboundListModal.style.display = 'none';
+  });
+
+  // 메인 화면 출고 확인 버튼 (전체 출고 제품 사진, 이름, 누적 출고 수량 보여주기)
+  mainOutboundBtn.addEventListener('click', () => {
+    outboundListContainer.innerHTML = '';
+    const keys = Object.keys(outboundRecords);
+    if (keys.length === 0) {
+      outboundListContainer.innerHTML = '<p>출고된 제품이 없습니다.</p>';
+    } else {
+      keys.forEach(key => {
+        const product = outboundRecords[key];
+        const div = document.createElement('div');
+        div.classList.add('modalProductItem');
+
+        const img = document.createElement('img');
+        img.src = product.image;
+        img.alt = product.name;
+
+        const infoDiv = document.createElement('div');
+        infoDiv.classList.add('productInfo');
+        infoDiv.textContent = product.name;
+
+        const qtyDiv = document.createElement('div');
+        qtyDiv.classList.add('productQty');
+        qtyDiv.textContent = `출고 수량: ${product.quantity}`;
+
+        div.appendChild(img);
+        div.appendChild(infoDiv);
+        div.appendChild(qtyDiv);
+
+        outboundListContainer.appendChild(div);
+      });
+    }
+    outboundListModal.style.display = 'block';
+  });
+
+  closeOutboundListBtn.addEventListener('click', () => {
+    outboundListModal.style.display = 'none';
+  });
+
+  // 초기 렌더링
+  renderInventory();
+
+</script>
+
+</body>
+</html>
